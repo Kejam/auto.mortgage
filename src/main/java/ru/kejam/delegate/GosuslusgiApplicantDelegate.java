@@ -4,8 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Service;
-import ru.kejam.repository.ApplicantRepository;
 import ru.kejam.domain.Applicant;
+import ru.kejam.repository.ApplicantRepository;
 import ru.kejam.service.ApplicantMapper;
 
 import java.nio.charset.StandardCharsets;
@@ -14,27 +14,26 @@ import java.time.LocalDate;
 
 @Service
 @Slf4j
-public class CreateApplicantDelegate implements JavaDelegate {
+public class GosuslusgiApplicantDelegate implements JavaDelegate {
     private final ApplicantRepository applicantRepository;
     private final ApplicantMapper applicantMapper;
 
-    public CreateApplicantDelegate(ApplicantRepository applicantRepository,
-                                   ApplicantMapper applicantMapper) {
+
+    public GosuslusgiApplicantDelegate(ApplicantRepository applicantRepository, ApplicantMapper applicantMapper) {
         this.applicantRepository = applicantRepository;
         this.applicantMapper = applicantMapper;
     }
 
+
     @Override
-    public void execute(DelegateExecution delegateExecution) throws Exception {
-        log.info("Старт обработки входящей заявки");
-        final String strApplicant = (String) delegateExecution.getVariable("applicant");
-        log.info("Входящая заявка: {}", strApplicant);
-        final Applicant applicant = applicantMapper.map(strApplicant);
-        applicantRepository.save(applicant);
+    public void execute(DelegateExecution execution) throws Exception {
+        log.info("Старт обработки входящей заявки, обогащение с помощью Госуслуг");
+        final String applicantString = String.valueOf(GosuslusgiApplicantDelegate.class.getClassLoader().getResourceAsStream("applicant.json"));
+        final Applicant applicant = applicantMapper.map(applicantString);
         log.info("Заявка успешна обработана {}", applicant.getId());
         uploadDocuments(applicant);
-        delegateExecution.setVariable("id", applicant.getId());
-        delegateExecution.setVariable("frod", "false");
+        execution.setVariable("id", applicant.getId());
+        execution.setVariable("frod", "false");
     }
 
     private void uploadDocuments(Applicant applicant) {
@@ -50,5 +49,4 @@ public class CreateApplicantDelegate implements JavaDelegate {
         applicant.setDateApplicant(Date.valueOf(LocalDate.now()));
         applicantRepository.save(applicant);
     }
-
 }
